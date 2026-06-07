@@ -99,7 +99,51 @@ def draw_frame(i):
     return img
 
 
+def hud_frame(d):
+    d.rectangle([0, 0, W - 1, H - 1], outline=0)
+    for (cx, cy) in [(0, 0), (W - 1, 0), (0, H - 1), (W - 1, H - 1)]:
+        sx = 1 if cx == 0 else -1
+        sy = 1 if cy == 0 else -1
+        d.line([(cx, cy), (cx + sx * 6, cy)], fill=0)
+        d.line([(cx, cy), (cx, cy + sy * 6)], fill=0)
+
+
+def build_lockscreen():
+    """Themed full-screen lock screen -> Icons/Interface/Lockscreen.png (128x64)."""
+    img = Image.new("1", (W, H), 1)
+    d = ImageDraw.Draw(img)
+    hud_frame(d)
+    d.text((4, 1), "FLIPDEFLOCK", font=f_title, fill=0)
+    d.line([(2, 12), (W - 3, 12)], fill=0)
+
+    # Padlock (left-of-center)
+    bx0, by0, bx1, by1 = 30, 32, 54, 52  # body
+    d.rectangle([bx0, by0, bx1, by1], outline=0)
+    d.rectangle([bx0 + 1, by0 + 1, bx1 - 1, by1 - 1], outline=0)  # double line = bold
+    cx = (bx0 + bx1) // 2
+    d.ellipse([cx - 2, by0 + 5, cx + 2, by0 + 9], outline=0)  # keyhole
+    d.line([(cx, by0 + 8), (cx, by0 + 14)], fill=0)
+    d.arc([bx0 + 3, by0 - 14, bx1 - 3, by0 + 6], 180, 360, fill=0)  # shackle
+    d.line([(bx0 + 3, by0 - 4), (bx0 + 3, by0)], fill=0)
+    d.line([(bx1 - 3, by0 - 4), (bx1 - 3, by0)], fill=0)
+
+    d.text((64, 30), "LOCKED", font=f_title, fill=0)
+    d.text((64, 41), "secure", font=f_small, fill=0)
+
+    # scanner accents (right side blips + a dotted sweep column)
+    for (bx, by) in [(110, 24), (118, 36), (104, 46)]:
+        d.ellipse([bx - 2, by - 2, bx + 2, by + 2], outline=0)
+        d.point((bx, by), fill=0)
+    for yy in range(16, 56, 4):
+        d.point((90, yy), fill=0)
+
+    os.makedirs(os.path.join(HERE, "Icons", "Interface"), exist_ok=True)
+    img.save(os.path.join(HERE, "Icons", "Interface", "Lockscreen.png"))
+    print("wrote Icons/Interface/Lockscreen.png")
+
+
 def main():
+    build_lockscreen()
     order = []
     for i in range(N):
         draw_frame(i).save(os.path.join(OUTDIR, f"frame_{i}.png"))
