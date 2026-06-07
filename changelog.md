@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.9
+- Dual-band Flock detection: the companion firmware now interleaves WiFi (2.4GHz
+  promiscuous) with periodic BLE scans, so Flock/Raven is detected over both
+  radios; BLE-Flock hits merge into the Flock list and reports.
+- Broader BLE Flock signatures (Penguin/FS Ext Battery names, Raven service
+  UUIDs, Flock OUIs) beyond the mfg-id check. BLE kept resident (no heap churn).
+
 ## v0.8
 - Stronger rogue/evil-twin heuristic: same SSID on multiple BSSIDs with
   mismatched security is flagged as a likely evil twin.

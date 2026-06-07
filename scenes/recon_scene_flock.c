@@ -29,6 +29,11 @@ void recon_scene_flock_on_enter(void* context) {
     // would steal the ESP's UART and silently kill detection.
     app->esp = esp_link_alloc(app);
     esp_link_start(app->esp);
+    // On the companion firmware, run dual-band (WiFi + BLE) Flock detection.
+    // Marauder can't do this -> it stays WiFi-only via the generic backend.
+    if(app->settings.backend == EspBackendCompanion) {
+        esp_link_send(app->esp, "flockcombo");
+    }
     if(app->settings.gps_enabled && app->settings.gps_uart != app->settings.esp_uart) {
         app->gps = gps_link_alloc(app);
         gps_link_start(app->gps);

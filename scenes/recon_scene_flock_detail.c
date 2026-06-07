@@ -30,13 +30,32 @@ static void recon_scene_flock_detail_render(ReconApp* app) {
     FlockEntry e = app->flock[app->selected];
     furi_mutex_release(app->mutex);
 
+    const char* src;
+    switch(e.ftype) {
+    case 'L':
+        src = "BLE";
+        break;
+    case 'P':
+        src = "probe";
+        break;
+    case 'B':
+        src = "beacon";
+        break;
+    case 'R':
+        src = "p-resp";
+        break;
+    default:
+        src = "RF";
+        break;
+    }
+
     FuriString* s = furi_string_alloc();
     furi_string_printf(
         s,
         "%s  %s\n"
         "%02X:%02X:%02X:%02X:%02X:%02X\n"
         "SSID: %s\n"
-        "RSSI %d  Ch %u  Seen %lu  [%c]",
+        "RSSI %d  Ch %u  Seen %lu  via %s",
         flock_confidence_str(e.confidence),
         e.marked ? "(MARKED)" : "",
         e.mac[0],
@@ -49,7 +68,7 @@ static void recon_scene_flock_detail_render(ReconApp* app) {
         e.rssi,
         e.channel,
         (unsigned long)e.count,
-        e.ftype ? e.ftype : '?');
+        src);
 
     if(!isnan(e.lat) && !isnan(e.lon)) {
         furi_string_cat_printf(s, "\nGPS %.5f, %.5f", (double)e.lat, (double)e.lon);

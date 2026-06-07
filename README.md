@@ -5,8 +5,9 @@
 A Flipper Zero app that turns your Flipper + **any ESP32 board** into a
 counter-surveillance **site-survey** tool:
 
-- 🛰️ **Flock / ALPR Detect** — find Flock Safety / ALPR surveillance cameras by
-  their Wi-Fi signatures, geotag them with GPS, and mark them for a report.
+- 🛰️ **Flock / ALPR Detect** — find Flock Safety / ALPR surveillance cameras
+  over **Wi-Fi *and* BLE** (the companion FW interleaves a 2.4 GHz sniff with a
+  BLE scan), geotag them with GPS, and mark them for a report.
 - 📶 **WiFi Audit** — scan nearby networks and grade each one's security
   (Open/WEP/WPA1/WPA2/WPA3, WPS, TKIP, hidden), spelling out exactly what's
   weak, and flag **evil-twin** SSIDs (same name, multiple BSSIDs). Plus passive

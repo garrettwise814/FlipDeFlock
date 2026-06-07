@@ -91,7 +91,8 @@ W,<bssid>,<rssi>,<ch>,<auth>,<pair>,<grp>,<wps>,<ssid>   one AP
 WEND,<count>                               WiFi audit scan finished
 ```
 
-RX (Flipper → board): `scan`, `stop`, `ver`, `wifiscan`, `ch <1-14>` (0 = hop).
+RX (Flipper → board): `scan` (WiFi Flock), `flockcombo` (interleaved WiFi+BLE
+Flock), `flockwifi`, `wifiscan`, `blescan`, `stop`, `ver`, `ch <1-14>` (0 = hop).
 
 ## Credit / data sources
 

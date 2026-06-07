@@ -66,6 +66,17 @@ static uint32_t g_last_hop = 0;
 static uint32_t g_deauths_last = 0; // for per-interval deauth rate
 static uint32_t g_last_da = 0; // rate-limit DA attribution lines
 
+// Dual-band (WiFi + BLE) Flock detection. BLE is initialised once and kept
+// resident (avoids the Bluedroid init/deinit heap leak); the radio is shared by
+// toggling promiscuous off during a BLE scan, then back on. flockcombo
+// interleaves a WiFi-promiscuous phase with a periodic BLE scan phase.
+static bool g_ble_inited = false;
+static BLEScan* g_ble = nullptr;
+static bool g_combo = false;
+static uint32_t g_phase_start = 0;
+#define COMBO_WIFI_MS 6500 // ~2 channel sweeps before a BLE scan
+#define COMBO_BLE_SEC 4 // BLE scan seconds (catches fast Flock adverts)
+
 static bool oui_match(const uint8_t* mac) {
     for(size_t i = 0; i < FLOCK_OUI_COUNT; i++) {
         if(mac[0] == FLOCK_OUIS[i][0] && mac[1] == FLOCK_OUIS[i][1] &&
@@ -279,18 +290,26 @@ static void wifi_security_scan() {
 // WiFi/Flock mode.
 //   BLE,<addr>,<rssi>,<cat>,<company>,<name>
 //   cat: 0 unknown  1 Flock/Raven  2 AirTag/FindMy  3 Tile  4 SmartTag
-static void ble_scan() {
-    esp_wifi_set_promiscuous(false);
-    esp_wifi_stop();
-
+static void ble_ensure_init() {
+    if(g_ble_inited) return;
     BLEDevice::init("");
-    BLEScan* scan = BLEDevice::getScan();
-    scan->setActiveScan(true);
-    scan->setInterval(100);
-    scan->setWindow(99);
+    g_ble = BLEDevice::getScan();
+    g_ble->setActiveScan(true);
+    g_ble->setInterval(80); // interval > window so BLE doesn't hog the radio
+    g_ble->setWindow(60);
+    g_ble_inited = true;
+}
+
+// Serialised BLE scan: toggles WiFi promiscuous OFF for the scan, then back ON
+// (BLE stays resident). Classifies Flock/Raven by mfg id 0x09C8, device name
+// (Penguin* / FS Ext Battery), Raven custom service UUIDs (0x3100-0x3500), or a
+// Flock OUI on the BLE address; plus AirTag/Tile/SmartTag. Emits BBEGIN/BLE/BEND.
+static void ble_do_scan(int seconds) {
+    ble_ensure_init();
+    esp_wifi_set_promiscuous(false);
 
     Serial.print("BBEGIN\n");
-    BLEScanResults found = scan->start(6, false);
+    BLEScanResults found = g_ble->start(seconds, false);
     int count = found.getCount();
     if(count > 80) count = 80;
     for(int i = 0; i < count; i++) {
@@ -306,12 +325,26 @@ static void ble_scan() {
             else if(company == 0x004C && md.length() >= 3 && (uint8_t)md[2] == 0x12)
                 cat = 2; // Apple Find My / AirTag
         }
-        if(cat == 0 && d.haveServiceUUID()) {
+        if(cat != 1 && d.haveName()) {
+            std::string nm = d.getName();
+            if(nm.rfind("Penguin", 0) == 0 || nm.find("FS Ext") != std::string::npos)
+                cat = 1; // Flock Penguin battery / FS external battery
+        }
+        if(d.haveServiceUUID()) {
             std::string u = d.getServiceUUID().toString();
-            if(u.find("feed") != std::string::npos || u.find("feec") != std::string::npos)
+            if(u.find("00003100") != std::string::npos || u.find("00003200") != std::string::npos ||
+               u.find("00003300") != std::string::npos || u.find("00003400") != std::string::npos ||
+               u.find("00003500") != std::string::npos)
+                cat = 1; // Raven custom GATT services
+            else if(cat == 0 && (u.find("feed") != std::string::npos || u.find("feec") != std::string::npos))
                 cat = 3; // Tile
-            else if(u.find("fd5a") != std::string::npos)
+            else if(cat == 0 && u.find("fd5a") != std::string::npos)
                 cat = 4; // Samsung SmartTag
+        }
+        if(cat == 0) {
+            BLEAddress ba = d.getAddress();
+            uint8_t* nat = ba.getNative();
+            if(nat && oui_match(nat)) cat = 1; // Flock OUI on the BLE address
         }
 
         std::string a = d.getAddress().toString();
@@ -335,11 +368,9 @@ static void ble_scan() {
     }
     Serial.printf("BEND,%d\n", count);
 
-    scan->clearResults();
-    BLEDevice::deinit(true);
-
-    esp_wifi_start();
-    start_promisc();
+    g_ble->clearResults();
+    esp_wifi_set_promiscuous(true);
+    set_channel(g_channel);
 }
 
 void setup() {
@@ -362,6 +393,7 @@ static void handle_command(String cmd) {
     cmd.trim();
     if(cmd == "scan") {
         g_scanning = true;
+        g_combo = false; // pure WiFi Flock
     } else if(cmd == "stop") {
         g_scanning = false;
     } else if(cmd == "ver") {
@@ -369,7 +401,13 @@ static void handle_command(String cmd) {
     } else if(cmd == "wifiscan") {
         wifi_security_scan();
     } else if(cmd == "blescan") {
-        ble_scan();
+        ble_do_scan(6);
+    } else if(cmd == "flockcombo") {
+        g_scanning = true;
+        g_combo = true; // interleaved WiFi + BLE Flock detection
+        g_phase_start = millis();
+    } else if(cmd == "flockwifi") {
+        g_combo = false;
     } else if(cmd.startsWith("ch ")) {
         int n = cmd.substring(3).toInt();
         if(n >= 1 && n <= 14) {
@@ -387,6 +425,14 @@ void loop() {
     }
 
     uint32_t now = millis();
+
+    // Dual-band: after a WiFi-promiscuous phase, run a BLE scan phase, then
+    // resume. The BLE scan blocks for a few seconds and restores promiscuous.
+    if(g_combo && now - g_phase_start >= COMBO_WIFI_MS) {
+        ble_do_scan(COMBO_BLE_SEC);
+        g_phase_start = millis();
+        return;
+    }
 
     // Channel hop every 300 ms unless locked.
     if(g_lock_channel == 0 && now - g_last_hop >= 300) {

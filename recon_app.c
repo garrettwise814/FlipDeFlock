@@ -154,6 +154,14 @@ void recon_app_ble_add(
         }
     }
     furi_mutex_release(app->mutex);
+
+    // A BLE-classified Flock/Raven device is also a Flock detection -> merge it
+    // into the Flock list (ftype 'L' = BLE) so it shows alongside WiFi hits,
+    // gets geotagged, and lands in reports. (Done after releasing the mutex;
+    // recon_app_report_flock takes it itself.)
+    if(cat == BleCatFlock) {
+        recon_app_report_flock(app, addr, name, rssi, 0, 'L', FlockConfidenceConfirmed);
+    }
 }
 
 void recon_app_ble_end(ReconApp* app) {
