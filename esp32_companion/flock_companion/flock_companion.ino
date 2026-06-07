@@ -343,7 +343,7 @@ static void ble_do_scan(int seconds) {
         }
         if(cat == 0) {
             BLEAddress ba = d.getAddress();
-            uint8_t* nat = ba.getNative();
+            uint8_t* nat = *ba.getNative(); // getNative() is uint8_t(*)[6]
             if(nat && oui_match(nat)) cat = 1; // Flock OUI on the BLE address
         }
 
