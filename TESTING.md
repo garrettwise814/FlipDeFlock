@@ -55,6 +55,18 @@ or any ESP32). Everything below is compile-verified in CI; this is the
       Momentum → Settings → Desktop → Asset Pack. Desktop shows the scanner HUD;
       lock the Flipper → themed lock screen.
 
+## 8. ESP32 Firmware flasher (NEW - untested)
+- [ ] **Back up first!** Open **ESP32 Firmware -> Backup current FW -> SD**. Put
+      the ESP in bootloader/download mode (hold BOOT, tap RESET) when prompted.
+      It should connect, dump the flash to `apps_data/flipdeflock/firmware/
+      backup_<ts>.bin`, and say `== DONE ==`. (Slow at 115200 - a 4 MB dump is
+      several minutes.)
+- [ ] **Flash a .bin -> 0x0**: pick `flock_companion-merged.bin` (copy it to SD
+      first). After flashing, the companion features should work.
+- [ ] **Restore**: flash the backup `.bin` from step 1 to return to Marauder.
+- [ ] Confirm the bootloader-entry method your Tri-Board needs (auto vs manual)
+      and whether connect succeeds - report back so auto-reset can be added.
+
 ## Notes / known risk areas
 - Dual-band (§1) and the BLE "following" logic (§4) are the **least-tested** paths
   on real hardware — focus here.
